@@ -21,7 +21,7 @@ export class ActionProvider implements vscode.CodeActionProvider{
 		{
 			const args: Parameters<typeof commandHandler> = [diagnostic.source, diagnostic.range, diagnostic.message];
 
-			action.command = { command: COMMAND, title: 'teste', arguments: args};
+			action.command = { command: COMMAND, title: 'title', arguments: args};
 			action.diagnostics = [diagnostic];
 			action.isPreferred = true;
 		}
