@@ -9,37 +9,55 @@ export function refreshDiagnostics(doc: vscode.TextDocument, diagnostics: vscode
 		'vscode.executeDocumentSymbolProvider',
 		doc.uri,
 		).then((symbols) => {
-		for (const symbol of symbols) {
-			switch (symbol.kind) {
-				case vscode.SymbolKind.Class:
-					for(const child of symbol.children){
-						if (child.kind == vscode.SymbolKind.Method){
-							vscode.commands.executeCommand<vscode.Location[]>(
-								'vscode.executeReferenceProvider',
-								doc.uri,
-								child.selectionRange.start
-								).then((references) =>{
-										createDiagnostic(references, new_diagnostics, diagnostics, doc, child, symbol);
-								});
-						}
-					}
-					break;
-				case vscode.SymbolKind.Function:
-					vscode.commands.executeCommand<vscode.Location[]>(
-						'vscode.executeReferenceProvider',
-						doc.uri,
-						symbol.selectionRange.start
-						).then((references) =>{
-							createDiagnostic(references, new_diagnostics, diagnostics, doc, symbol, 
-								new vscode.DocumentSymbol("name", "detail", vscode.SymbolKind.Null, 
-								new vscode.Range(new vscode.Position(1,1),new vscode.Position(1,1)),
-								new vscode.Range(new vscode.Position(1,1),new vscode.Position(1,1))));
-						});
-					break;
-			}
-			
+			iterateOnSymbols(symbols, doc, new_diagnostics, diagnostics);
+		});
+}
+
+function iterateOnSymbols(symbols: vscode.DocumentSymbol[], doc: vscode.TextDocument, 
+	new_diagnostics: vscode.Diagnostic[], diagnostics: vscode.DiagnosticCollection){
+	for (const symbol of symbols) {
+		switch (symbol.kind) {
+			case vscode.SymbolKind.Class:
+				iterateOnChildren(symbol, doc, new_diagnostics, diagnostics)
+				break;
+			case vscode.SymbolKind.Function:
+				generateFunctionDiagnostic(symbol, doc, new_diagnostics, diagnostics);
+				break;
 		}
-	});
+	}
+}
+
+function iterateOnChildren(symbol: vscode.DocumentSymbol, doc: vscode.TextDocument, 
+	new_diagnostics: vscode.Diagnostic[], diagnostics: vscode.DiagnosticCollection){
+	for(const child of symbol.children){
+		if (child.kind == vscode.SymbolKind.Method){
+			vscode.commands.executeCommand<vscode.Location[]>(
+				'vscode.executeReferenceProvider',
+				doc.uri,
+				child.selectionRange.start
+				).then((references) =>{
+					if (references.length > 1){
+						createDiagnostic(references, new_diagnostics, diagnostics, doc, child, symbol);
+					}
+				});
+		}
+	}
+}
+
+function generateFunctionDiagnostic(symbol: vscode.DocumentSymbol, doc: vscode.TextDocument, 
+	new_diagnostics: vscode.Diagnostic[], diagnostics: vscode.DiagnosticCollection){
+	vscode.commands.executeCommand<vscode.Location[]>(
+		'vscode.executeReferenceProvider',
+		doc.uri,
+		symbol.selectionRange.start
+		).then((references) =>{
+			if (references.length > 1){
+				createDiagnostic(references, new_diagnostics, diagnostics, doc, symbol, 
+				new vscode.DocumentSymbol("name", "detail", vscode.SymbolKind.Null, 
+				new vscode.Range(new vscode.Position(1,1),new vscode.Position(1,1)),
+				new vscode.Range(new vscode.Position(1,1),new vscode.Position(1,1))));
+			}
+		});
 }
 
 function createDiagnostic(references: vscode.Location[], new_diagnostics: vscode.Diagnostic[],
