@@ -3,66 +3,69 @@ import * as vscode from 'vscode';
 export const UNIT_TEST_CODE = "unit_test";
 
 export function refreshDiagnostics(doc: vscode.TextDocument, diagnostics: vscode.DiagnosticCollection): void{
-	const new_diagnostics: vscode.Diagnostic[] = [];
-
 	vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
 		'vscode.executeDocumentSymbolProvider',
 		doc.uri,
 		).then((symbols) => {
-			iterateOnSymbols(symbols, doc, new_diagnostics, diagnostics);
+			iterateOnSymbols(symbols, doc).then((new_diagnostics)=>{
+				diagnostics.set(doc.uri, new_diagnostics);
+			})
 		});
 }
 
-function iterateOnSymbols(symbols: vscode.DocumentSymbol[], doc: vscode.TextDocument, 
-	new_diagnostics: vscode.Diagnostic[], diagnostics: vscode.DiagnosticCollection){
+async function iterateOnSymbols(symbols: vscode.DocumentSymbol[], doc: vscode.TextDocument): Promise<vscode.Diagnostic[]>{
+	const new_diagnostics: vscode.Diagnostic[] = [];
 	for (const symbol of symbols) {
 		switch (symbol.kind) {
 			case vscode.SymbolKind.Class:
-				iterateOnChildren(symbol, doc, new_diagnostics, diagnostics)
+				const diagnostics = await iterateOnChildren(symbol, doc);
+				new_diagnostics.push(...diagnostics);
 				break;
 			case vscode.SymbolKind.Function:
-				generateFunctionDiagnostic(symbol, doc, new_diagnostics, diagnostics);
+				const diagnostic = await generateFunctionDiagnostic(symbol, doc);
+				if (diagnostic instanceof vscode.Diagnostic)
+					new_diagnostics.push(diagnostic);
 				break;
 		}
 	}
+
+	return new_diagnostics;
 }
 
-function iterateOnChildren(symbol: vscode.DocumentSymbol, doc: vscode.TextDocument, 
-	new_diagnostics: vscode.Diagnostic[], diagnostics: vscode.DiagnosticCollection){
+async function iterateOnChildren(symbol: vscode.DocumentSymbol, doc: vscode.TextDocument): Promise<vscode.Diagnostic[]>{
+	const diagnostics: vscode.Diagnostic[] = [];
 	for(const child of symbol.children){
 		if (child.kind == vscode.SymbolKind.Method){
-			vscode.commands.executeCommand<vscode.Location[]>(
+			const diagnostic = await vscode.commands.executeCommand<vscode.Location[]>(
 				'vscode.executeReferenceProvider',
 				doc.uri,
 				child.selectionRange.start
 				).then((references) =>{
-					if (references.length > 1){
-						createDiagnostic(references, new_diagnostics, diagnostics, doc, child, symbol);
-					}
+					return createDiagnostic(references, child, symbol);
 				});
+			if (diagnostic instanceof vscode.Diagnostic)
+				diagnostics.push(diagnostic);
 		}
 	}
+
+	return diagnostics;
 }
 
-function generateFunctionDiagnostic(symbol: vscode.DocumentSymbol, doc: vscode.TextDocument, 
-	new_diagnostics: vscode.Diagnostic[], diagnostics: vscode.DiagnosticCollection){
-	vscode.commands.executeCommand<vscode.Location[]>(
+async function generateFunctionDiagnostic(symbol: vscode.DocumentSymbol, doc: vscode.TextDocument): Promise<vscode.Diagnostic | void>{
+	return vscode.commands.executeCommand<vscode.Location[]>(
 		'vscode.executeReferenceProvider',
 		doc.uri,
 		symbol.selectionRange.start
 		).then((references) =>{
-			if (references.length > 1){
-				createDiagnostic(references, new_diagnostics, diagnostics, doc, symbol, 
-				new vscode.DocumentSymbol("name", "detail", vscode.SymbolKind.Null, 
-				new vscode.Range(new vscode.Position(1,1),new vscode.Position(1,1)),
-				new vscode.Range(new vscode.Position(1,1),new vscode.Position(1,1))));
-			}
+			return createDiagnostic(references, symbol, 
+			new vscode.DocumentSymbol("name", "detail", vscode.SymbolKind.Null, 
+			new vscode.Range(new vscode.Position(1,1),new vscode.Position(1,1)),
+			new vscode.Range(new vscode.Position(1,1),new vscode.Position(1,1))));
 		});
 }
 
-function createDiagnostic(references: vscode.Location[], new_diagnostics: vscode.Diagnostic[],
-	diagnostics: vscode.DiagnosticCollection, doc: vscode.TextDocument, child: vscode.DocumentSymbol,
-	parent: vscode.DocumentSymbol): void{
+function createDiagnostic(references: vscode.Location[], child: vscode.DocumentSymbol,
+	parent: vscode.DocumentSymbol): vscode.Diagnostic | void{
 	let count = 0;
 	for (const reference of references) {
 		if (reference.uri.path.indexOf(".spec.ts")>=0){
@@ -79,8 +82,8 @@ function createDiagnostic(references: vscode.Location[], new_diagnostics: vscode
 		diagnostic.source = vscode.SymbolKind[child.kind];
 		if (parent.kind != vscode.SymbolKind.Null)
 			{diagnostic.message = parent.name;}
-		new_diagnostics.push(diagnostic);
-		diagnostics.set(doc.uri, new_diagnostics);
+
+		return diagnostic;
 	}
 }
 

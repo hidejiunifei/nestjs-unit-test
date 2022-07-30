@@ -6,5 +6,5 @@ export const commandHandler = async(symbolKindString: string, range: vscode.Rang
 
 	if(!editor)
 		{return;}
-	CreateFile(editor, range, parent, symbolKindString);	
+	await CreateFile(editor, range, parent, symbolKindString);	
 };

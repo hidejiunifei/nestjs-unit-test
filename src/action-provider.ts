@@ -17,8 +17,7 @@ export class ActionProvider implements vscode.CodeActionProvider{
 
 	private createCommandCodeAction(diagnostic: vscode.Diagnostic): vscode.CodeAction {
 		const action = new vscode.CodeAction('Generate unit test', vscode.CodeActionKind.QuickFix);
-		if (diagnostic.source)
-		{
+		if (diagnostic.source){
 			const args: Parameters<typeof commandHandler> = [diagnostic.source, diagnostic.range, diagnostic.message];
 
 			action.command = { command: COMMAND, title: 'title', arguments: args};
