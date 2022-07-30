@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import { UNIT_TEST_CODE } from "./diagnostics"
-import { commandHandler } from "./command"
+import { UNIT_TEST_CODE } from "./diagnostics";
+import { commandHandler } from "./command";
 
 export const COMMAND = 'unit-tests.command';
 

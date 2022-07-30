@@ -19,7 +19,7 @@ export function refreshDiagnostics(doc: vscode.TextDocument, diagnostics: vscode
 								doc.uri,
 								child.selectionRange.start
 								).then((references) =>{
-									createDiagnostic(references, new_diagnostics, diagnostics, doc, child, symbol);
+										createDiagnostic(references, new_diagnostics, diagnostics, doc, child, symbol);
 								});
 						}
 					}
@@ -60,7 +60,7 @@ function createDiagnostic(references: vscode.Location[], new_diagnostics: vscode
 		diagnostic.code = UNIT_TEST_CODE;
 		diagnostic.source = vscode.SymbolKind[child.kind];
 		if (parent.kind != vscode.SymbolKind.Null)
-			diagnostic.message = parent.name;
+			{diagnostic.message = parent.name;}
 		new_diagnostics.push(diagnostic);
 		diagnostics.set(doc.uri, new_diagnostics);
 	}
