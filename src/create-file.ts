@@ -33,7 +33,8 @@ export function CreateFile(editor: vscode.TextEditor, range: vscode.Range, paren
 }
 
 function generateUnitTest(editor: vscode.TextEditor, range: vscode.Range, parent: string) : string{
-	return `describe("${editor.document.getText(range)}", ()=> {${parent ? `mock${parent}.` : ""}${editor.document.getText(range)}();});`;
+	const prefix = parent ? `mock${parent}.` : "";
+	return `describe("${editor.document.getText(range)}", ()=> {${prefix}${editor.document.getText(range)}();});`;
 }
 
 function generateLets(parent: string): string{
