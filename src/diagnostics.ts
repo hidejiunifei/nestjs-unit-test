@@ -18,7 +18,7 @@ async function iterateOnSymbols(symbols: vscode.DocumentSymbol[], doc: vscode.Te
 	for (const symbol of symbols) {
 		switch (symbol.kind) {
 			case vscode.SymbolKind.Class:
-				const diagnostics = await iterateOnChildren(symbol, doc);
+				const diagnostics = await generateClassDiagnostic(symbol, doc);
 				new_diagnostics.push(...diagnostics);
 				break;
 			case vscode.SymbolKind.Function:
@@ -32,7 +32,7 @@ async function iterateOnSymbols(symbols: vscode.DocumentSymbol[], doc: vscode.Te
 	return new_diagnostics;
 }
 
-async function iterateOnChildren(symbol: vscode.DocumentSymbol, doc: vscode.TextDocument): Promise<vscode.Diagnostic[]>{
+async function generateClassDiagnostic(symbol: vscode.DocumentSymbol, doc: vscode.TextDocument): Promise<vscode.Diagnostic[]>{
 	const diagnostics: vscode.Diagnostic[] = [];
 	for(const child of symbol.children){
 		if (child.kind == vscode.SymbolKind.Method){
