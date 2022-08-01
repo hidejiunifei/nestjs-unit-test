@@ -62,9 +62,9 @@ function processVariableDefinition(variableDefinition: vscode.LocationLink[], do
 			const variableText = doc.getText(variableDefinition[0].targetRange);
 			for (const matchDef of variableText.matchAll(/[\w-]+:\s*([^,;=]+)[=,;]*/g)){
 				if (matchDef.length > 1){
-					unitTest = unitTest.concat(`const mock${mockFunctionName} = sinon.stub(mock${matchDef[1]}, "${mockFunctionName}");`);
-					unitTest = unitTest.concat(`sinon.assert.calledOnce(mock${mockFunctionName});`);
-					unitTest = unitTest.concat(`mock${mockFunctionName}.restore();`);
+					unitTest = unitTest.concat(`\n\t\tconst mock${mockFunctionName} = sinon.stub(mock${matchDef[1]}, "${mockFunctionName}");`);
+					unitTest = unitTest.concat(`\n\t\tsinon.assert.calledOnce(mock${mockFunctionName});`);
+					unitTest = unitTest.concat(`\n\t\tmock${mockFunctionName}.restore();`);
 				}	
 			}
 		}
@@ -86,7 +86,7 @@ async function generateUnitTest(doc: vscode.TextDocument, range: vscode.Range, p
 
 	const prefix = parent ? `mock${parent}.` : "";
 	let unitTest: string = 
-	`describe("${doc.getText(range)}", ()=> {${prefix}${doc.getText(range)}();`;
+	`describe("${doc.getText(range)}", ()=> {\n\t\t${prefix}${doc.getText(range)}();`;
 
 	if (parent){
 		await vscode.commands.executeCommand<vscode.LocationLink[]>(
@@ -124,7 +124,7 @@ function generateImports(doc: vscode.TextDocument, symbolKindString: string, ran
 	if (importPath){
 		const numberOfGoBacks = importPath.substring(importPath.indexOf("/src/")+1).match(/\//g)?.length;
 		if (numberOfGoBacks)
-			{importPath = "../".repeat(numberOfGoBacks) + importPath.substring(importPath.indexOf("/src/")+1, importPath.indexOf("."));}
+			{importPath = "../".repeat(numberOfGoBacks) + importPath.substring(importPath.indexOf("/src/")+1, importPath.indexOf(".ts"));}
 	}
 
 	switch (symbolKindString) {
