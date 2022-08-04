@@ -1,12 +1,12 @@
 import * as fs from 'fs';
 import * as vscode from 'vscode';
+import { skeleton }  from './skeleton';
 
 export async function CreateFile(editor: vscode.TextEditor, range: vscode.Range, parent: string, symbolKindString: string){
 	let filePath = editor.document.uri.fsPath.replace("src", "test");
 	let filename = filePath.substring(filePath.lastIndexOf("\\")+1, filePath.lastIndexOf("."));
 	filePath = filePath.substring(0, filePath.lastIndexOf(".")) + ".spec.ts";
 	const directory = filePath.substring(0, filePath.lastIndexOf("\\"));
-	const skeleton = fs.readFileSync("C:\\Users\\HH00794011\\unit-test\\src\\skeleton.txt").toString();
 
 	if (!fs.existsSync(directory)){
 		fs.mkdirSync(directory, { recursive: true});
@@ -21,13 +21,12 @@ export async function CreateFile(editor: vscode.TextEditor, range: vscode.Range,
 		fs.appendFileSync(filePath, unitTest);
 	}
 	else{
-		fs.writeFileSync(filePath, `${skeleton
+		fs.writeFileSync(filePath, skeleton
 			.replace("[filename]", filename)
 			.replace("[content]", unitTest)
 			.replace("[imports]", imports)
 			.replace("[lets]", lets)
-			.replace("[instances]", instances)
-		}`);
+			.replace("[instances]", instances));
 	}
 }
 

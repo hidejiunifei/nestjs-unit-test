@@ -1,4 +1,4 @@
-import { Test, TestingModule } from "@nestjs/testing";
+export const skeleton = `import { Test, TestingModule } from "@nestjs/testing";
 [imports]
 
 describe("[filename]", () => {
@@ -22,4 +22,4 @@ describe("[filename]", () => {
 	});
 
 	[content]
-});
+});`;
