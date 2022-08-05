@@ -12,10 +12,10 @@ export async function CreateFile(editor: vscode.TextEditor, range: vscode.Range,
 		fs.mkdirSync(directory, { recursive: true});
 	}
 
-	const unitTest = await generateUnitTest(editor.document, range, parent);
+	const unitTest = await generateUnitTest(editor.document, range, parent, symbolKindString);
 	const imports = generateImports(editor.document, symbolKindString, range, parent);
-	const lets = generateLets(parent);
-	const instances = generateInstances(parent);
+	const lets = generateLets(parent, symbolKindString);
+	const instances = generateInstances(parent, symbolKindString);
 
 	if (fs.existsSync(filePath)){
 		fs.appendFileSync(filePath, unitTest);
@@ -81,11 +81,12 @@ async function getVariableDefinition(doc: vscode.TextDocument, index: number, ch
 		);
 }
 
-async function generateUnitTest(doc: vscode.TextDocument, range: vscode.Range, parent: string) : Promise<string> {
+async function generateUnitTest(doc: vscode.TextDocument, range: vscode.Range, parent: string, symbolKindString: string) : Promise<string> {
 
 	const prefix = parent ? `mock${parent}.` : "";
-	let unitTest: string = 
-	`describe("${doc.getText(range)}", ()=> {\n\t\t${prefix}${doc.getText(range)}();`;
+	const method = symbolKindString === "Constructor" ? `new ${parent}()`:
+	`${prefix}${ doc.getText(range)}()`;
+	let unitTest: string = `describe("${doc.getText(range)}", ()=> {\n\t\t${method};`;
 
 	if (parent){
 		await vscode.commands.executeCommand<vscode.LocationLink[]>(
@@ -103,15 +104,15 @@ async function generateUnitTest(doc: vscode.TextDocument, range: vscode.Range, p
 	return unitTest;
 }
 
-function generateLets(parent: string): string{
-	if (parent)
+function generateLets(parent: string, symbolKindString: string): string{
+	if (parent && symbolKindString != "Constructor")
 		{return `let mock${parent}: ${parent}`;}
 	else
 		{return "";}
 }
 
-function generateInstances(parent: string): string{
-	if (parent)
+function generateInstances(parent: string, symbolKindString: string): string{
+	if (parent && symbolKindString != "Constructor")
 		{return `mock${parent} = testingModule.get(${parent})`;}
 	else
 		{return "";}
@@ -130,6 +131,7 @@ function generateImports(doc: vscode.TextDocument, symbolKindString: string, ran
 		case "Function":
 			imports = `import { ${doc.getText(range)} } from "${importPath}";`;
 			break;
+		case "Constructor":
 		case "Method":
 			imports = `import { ${parent} } from "${importPath}";`;
 			break;

@@ -9,7 +9,7 @@ export function refreshDiagnostics(doc: vscode.TextDocument, diagnostics: vscode
 		).then((symbols) => {
 			iterateOnSymbols(symbols, doc).then((new_diagnostics)=>{
 				diagnostics.set(doc.uri, new_diagnostics);
-			})
+			});
 		});
 }
 
@@ -24,7 +24,7 @@ async function iterateOnSymbols(symbols: vscode.DocumentSymbol[], doc: vscode.Te
 			case vscode.SymbolKind.Function:
 				const diagnostic = await generateFunctionDiagnostic(symbol, doc);
 				if (diagnostic instanceof vscode.Diagnostic)
-					new_diagnostics.push(diagnostic);
+					{new_diagnostics.push(diagnostic);}
 				break;
 		}
 	}
@@ -35,7 +35,7 @@ async function iterateOnSymbols(symbols: vscode.DocumentSymbol[], doc: vscode.Te
 async function generateClassDiagnostic(symbol: vscode.DocumentSymbol, doc: vscode.TextDocument): Promise<vscode.Diagnostic[]>{
 	const diagnostics: vscode.Diagnostic[] = [];
 	for(const child of symbol.children){
-		if (child.kind == vscode.SymbolKind.Method){
+		if (child.kind == vscode.SymbolKind.Method || child.kind == vscode.SymbolKind.Constructor ){
 			const diagnostic = await vscode.commands.executeCommand<vscode.Location[]>(
 				'vscode.executeReferenceProvider',
 				doc.uri,
@@ -44,7 +44,7 @@ async function generateClassDiagnostic(symbol: vscode.DocumentSymbol, doc: vscod
 					return createDiagnostic(references, child, symbol);
 				});
 			if (diagnostic instanceof vscode.Diagnostic)
-				diagnostics.push(diagnostic);
+				{diagnostics.push(diagnostic);}
 		}
 	}
 
@@ -74,9 +74,17 @@ function createDiagnostic(references: vscode.Location[], child: vscode.DocumentS
 		}
 	}
 	if (count == 0){
-		let diagnostic = new vscode.Diagnostic(new vscode.Range(
-			new vscode.Position(child.selectionRange.end.line, child.selectionRange.start.character), 
-			new vscode.Position(child.selectionRange.end.line, child.selectionRange.end.character)),
+		let startPosition, endPosition;
+		if (child.kind == vscode.SymbolKind.Constructor){
+			startPosition = new vscode.Position(child.selectionRange.start.line, child.selectionRange.start.character);
+			endPosition = new vscode.Position(child.selectionRange.start.line, 12);
+		}
+		else{
+			startPosition = new vscode.Position(child.selectionRange.end.line, child.selectionRange.start.character);
+			endPosition = new vscode.Position(child.selectionRange.end.line, child.selectionRange.end.character);
+		}
+
+		let diagnostic = new vscode.Diagnostic(new vscode.Range(startPosition, endPosition),
 			"no unit test found", vscode.DiagnosticSeverity.Warning);
 		diagnostic.code = UNIT_TEST_CODE;
 		diagnostic.source = vscode.SymbolKind[child.kind];
