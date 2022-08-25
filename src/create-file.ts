@@ -86,7 +86,7 @@ async function generateUnitTest(doc: vscode.TextDocument, range: vscode.Range, p
 	const prefix = parent ? `mock${parent}.` : "";
 	const method = symbolKindString === "Constructor" ? `new ${parent}()`:
 	`${prefix}${ doc.getText(range)}()`;
-	let unitTest: string = `describe("${doc.getText(range)}", ()=> {\n\t\t${method};`;
+	let unitTest: string = `describe("${doc.getText(range)}", ()=> {\n\tit("pending description", ()=> {\n\t\t${method};`;
 
 	if (parent){
 		await vscode.commands.executeCommand<vscode.LocationLink[]>(
@@ -99,7 +99,7 @@ async function generateUnitTest(doc: vscode.TextDocument, range: vscode.Range, p
 				}	
 			});
 	}
-	unitTest = unitTest.concat("});");
+	unitTest = unitTest.concat("\n\t\t});\n\t});");
 
 	return unitTest;
 }
@@ -113,7 +113,7 @@ function generateLets(parent: string, symbolKindString: string): string{
 
 function generateInstances(parent: string, symbolKindString: string): string{
 	if (parent && symbolKindString != "Constructor")
-		{return `mock${parent} = testingModule.get(${parent})`;}
+		{return `mock${parent} = testingModule.get(${parent});`;}
 	else
 		{return "";}
 }
